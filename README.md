@@ -1,2 +1,3 @@
 # memory-simulator
-Grupo: Yago de Villoutreys y Gonzalo de Antonio
+Miembro 1: Yago de Villoutreys
+Miembro 2: Gonzalo de Antonio
