@@ -8,11 +8,11 @@ typedef struct {
     unsigned char Data[TAM_LINEA];
 } T_CACHE_LINE;
 
-void IniciarCache(T_CACHE_LINE *cache);
 void TratarFallo(T_CACHE_LINE *tbl, char *MRAM, int ETQ, int linea, int bloque);
 void ParsearDireccion(unsigned int addr, int *ETQ, int *palabra, int *linea, int *bloque);
 void VolcarCACHE(T_CACHE_LINE *tbl);
 void LimpiarCACHE(T_CACHE_LINE tbl[NUM_FILAS]);
+
 int ExtraerBits(int addr, int posicion, int numBits);
 
 int main(int argc, char *argv){
@@ -20,7 +20,7 @@ int main(int argc, char *argv){
     int numfallos = 0;
     
     T_CACHE_LINE cache[NUM_FILAS];
-    IniciarCache(cache);
+    LimpiarCACHE(cache);
 
     unsigned char Simul_RAM[4096];
     FILE *contenidoRAM;
@@ -47,26 +47,16 @@ int main(int argc, char *argv){
     fclose(memorias);
 }
 
-void IniciarCache(T_CACHE_LINE *cache){
-    for (int i = 0; i < NUM_FILAS; i++){
-        cache->ETQ = 0xFF;
-        for (int j = 0; j < TAM_LINEA; j++){
-            cache->Data[j] = 0x23;
-        }
-    }
-}
-
 void TratarFallo(T_CACHE_LINE *tbl, char *MRAM, int ETQ, int linea, int bloque){
 
 }
 
 void ParsearDireccion(unsigned int addr, int *ETQ, int *palabra, int *linea, int *bloque){
-    ExtraerBits(0x800, 0, 0);
-    *ETQ = ExtraerBits(addr, 0, 5);
-    *linea = ExtraerBits(addr, 6, 3);
-    *palabra = ExtraerBits(addr, 9, 4);
-    *bloque = ExtraerBits(addr, 0, 8);
-    printf("PRUEBA PARSEO - ADDR: %04X ETQ: %02X Linea: %02X Palabra: %02X Bloque: %02X\n", addr, *ETQ, *palabra, *linea, *bloque);
+    *ETQ = ExtraerBits(addr, 8, 5);
+    *linea = ExtraerBits(addr, 5, 3);
+    *palabra = ExtraerBits(addr, 1, 4);
+    *bloque = ExtraerBits(addr, 5, 8);
+    printf("PRUEBA PARSEO - ADDR: %04X ETQ: %02X Linea: %02X Palabra: %02X Bloque: %02X\n", addr, *ETQ, *linea, *palabra, *bloque);
 }
 
 void VolcarCACHE(T_CACHE_LINE *tbl){
@@ -80,7 +70,12 @@ void VolcarCACHE(T_CACHE_LINE *tbl){
 }
 
 void LimpiarCACHE(T_CACHE_LINE tbl[NUM_FILAS]){
-
+    for (int i = 0; i < NUM_FILAS; i++){
+        tbl->ETQ = 0xFF;
+        for (int j = 0; j < TAM_LINEA; j++){
+            tbl->Data[j] = 0x23;
+        }
+    }
 }
 
 int ExtraerBits(int addr, int posicion, int numBits){
