@@ -17,7 +17,6 @@ int ExtraerBits(int addr, int posicion, int numBits);
 
 int globaltime = 0;
 int numfallos = 0;
-int charsLeidos = 0;
 char texto[100];
 
 int main(int argc, char *argv){
@@ -52,26 +51,34 @@ int main(int argc, char *argv){
             printf("T: %d, Fallo de CACHE %d, ADDR %04X Label %X linea %02X palabra %02X bloque %02X\n", globaltime, numfallos, addr, ETQ, linea, palabra, bloque);
             TratarFallo(cache, Simul_RAM, ETQ, linea, bloque);
             globaltime += 10;
-            printf("T: %d, Acierto de CACHE, ADDR %04X Label %X linea %02X palabra %02X DATO %02X\n", globaltime, addr, ETQ, linea, palabra, bloque);
-            VolcarCACHE(cache);
-            sleep(1);
         }
+        printf("T: %d, Acierto de CACHE, ADDR %04X Label %X linea %02X palabra %02X DATO %02X\n", globaltime, addr, ETQ, linea, palabra, bloque);
+        texto[accesosTotales] = (char)cache[linea].Data[palabra];
+        VolcarCACHE(cache);
+        sleep(1);
         accesosTotales++;
     }
-
+    fclose(memorias);
+    
     printf("Accesos totales: %d; fallos: %d; Tiempo medio: %.2f\n", accesosTotales, numfallos, (float)globaltime/(float)accesosTotales);
     printf("Texto leído: %s\n", texto);
-    
-    fclose(memorias);
+
+    /*FILE *CONTENTS_CACHE;
+    CONTENTS_CACHE = fopen("CONTENTS_CACHE.bin", "bw");
+    for (int i = 0; i < NUM_FILAS; i++){
+        for (int j = TAM_LINEA-1; j >= 0 ; j--){
+            fwrite(&cache[i].Data[j], 1, 1, CONTENTS_CACHE);
+        }
+    }
+    fclose(CONTENTS_CACHE);*/
     return 0;
 }
 
 void TratarFallo(T_CACHE_LINE *tbl, char *MRAM, int ETQ, int linea, int bloque){
+    printf("Cargando el bloque %02X en la linea %02X\n", bloque, linea);
     tbl[linea].ETQ = ETQ;
     for (int i = 0; i < 16; i++){
         tbl[linea].Data[i] = MRAM[bloque*16+i];
-        texto[charsLeidos] = MRAM[bloque*16+i];
-        charsLeidos++;
     }
 }
 
