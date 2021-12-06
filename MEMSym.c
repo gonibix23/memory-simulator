@@ -15,10 +15,12 @@ void LimpiarCACHE(T_CACHE_LINE tbl[NUM_FILAS]);
 
 int ExtraerBits(int addr, int posicion, int numBits);
 
+int globaltime = 0;
+int numfallos = 0;
+int charsLeidos = 0;
+char texto[100];
+
 int main(int argc, char *argv){
-    int globaltime = 0;
-    int numfallos = 0;
-    
     T_CACHE_LINE cache[NUM_FILAS];
     LimpiarCACHE(cache);
 
@@ -38,17 +40,39 @@ int main(int argc, char *argv){
         printf("ERROR: No existe el archivo");
         return -1;
     }
+
     unsigned int addr;
+    int accesosTotales = 0;
     while (fscanf(memorias, "%X", &addr) != EOF) {
+        globaltime += 1;
         int ETQ, palabra, linea, bloque;
         ParsearDireccion(addr, &ETQ, &palabra, &linea, &bloque);
+        if(cache[linea].ETQ != ETQ){
+            numfallos++;
+            printf("T: %d, Fallo de CACHE %d, ADDR %04X Label %X linea %02X palabra %02X bloque %02X\n", globaltime, numfallos, addr, ETQ, linea, palabra, bloque);
+            TratarFallo(cache, Simul_RAM, ETQ, linea, bloque);
+            globaltime += 10;
+            printf("T: %d, Acierto de CACHE, ADDR %04X Label %X linea %02X palabra %02X DATO %02X\n", globaltime, addr, ETQ, linea, palabra, bloque);
+            VolcarCACHE(cache);
+            sleep(1);
+        }
+        accesosTotales++;
     }
-    VolcarCACHE(cache);
+
+    printf("Accesos totales: %d; fallos: %d; Tiempo medio: %.2f\n", accesosTotales, numfallos, (float)globaltime/(float)accesosTotales);
+    printf("Texto leído: %s\n", texto);
+    
     fclose(memorias);
+    return 0;
 }
 
 void TratarFallo(T_CACHE_LINE *tbl, char *MRAM, int ETQ, int linea, int bloque){
-
+    tbl[linea].ETQ = ETQ;
+    for (int i = 0; i < 16; i++){
+        tbl[linea].Data[i] = MRAM[bloque*16+i];
+        texto[charsLeidos] = MRAM[bloque*16+i];
+        charsLeidos++;
+    }
 }
 
 void ParsearDireccion(unsigned int addr, int *ETQ, int *palabra, int *linea, int *bloque){
@@ -56,29 +80,28 @@ void ParsearDireccion(unsigned int addr, int *ETQ, int *palabra, int *linea, int
     *linea = ExtraerBits(addr, 5, 3);
     *palabra = ExtraerBits(addr, 1, 4);
     *bloque = ExtraerBits(addr, 5, 8);
-    printf("PRUEBA PARSEO - ADDR: %04X ETQ: %02X Linea: %02X Palabra: %02X Bloque: %02X\n", addr, *ETQ, *linea, *palabra, *bloque);
 }
 
 void VolcarCACHE(T_CACHE_LINE *tbl){
     for (int i = 0; i < NUM_FILAS; i++){
-        printf("ETQ:%X\tData", tbl->ETQ);
+        printf("ETQ:%X\tData", tbl[i].ETQ);
         for (int j = TAM_LINEA-1; j >= 0 ; j--){
-            printf(" %X", tbl->Data[j]);
+            printf(" %X", tbl[i].Data[j]);
         }
         printf("\n");
     }
+    printf("\n");
 }
 
 void LimpiarCACHE(T_CACHE_LINE tbl[NUM_FILAS]){
     for (int i = 0; i < NUM_FILAS; i++){
-        tbl->ETQ = 0xFF;
+        tbl[i].ETQ = 0xFF;
         for (int j = 0; j < TAM_LINEA; j++){
-            tbl->Data[j] = 0x23;
+            tbl[i].Data[j] = 0x23;
         }
     }
 }
 
 int ExtraerBits(int addr, int posicion, int numBits){
-    printf("\t%d\t||", (((1 << numBits) - 1) & (addr >> (posicion - 1))));
     return (((1 << numBits) - 1) & (addr >> (posicion - 1)));
 }
